@@ -331,9 +331,7 @@ return QRCode;
                 <button class="btn btn-success btn-block" onclick="completeSale()" style="font-size:14px;padding:12px">
                   ✅ Completar + PDF &nbsp;<kbd>F2</kbd>
                 </button>
-                <button class="btn btn-primary btn-block" onclick="printLabelFromCart()" style="font-size:13px">
-                  🏷️ Imprimir Etiqueta &nbsp;<kbd>F3</kbd>
-                </button>
+
                 <!-- Botón copiar nota al portapapeles -->
                 <button class="btn btn-ghost btn-block" onclick="copiarNota()" style="font-size:13px;background:#25D366;color:white;border:none">
                   📋 Copiar nota &nbsp;<kbd>F1</kbd>
@@ -615,102 +613,6 @@ return QRCode;
         <div class="input-group">
           <label>Nombre de tu impresora de tickets (solo referencia)</label>
           <input class="input" id="cfgPrinterTicket" placeholder="Ej: HP LaserJet 1020">
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <h3>🏷️ Impresora de Etiquetas (41×25mm)</h3>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
-          Al imprimir etiquetas se abre la ventana de impresión. Selecciona tu impresora térmica y configura:<br>
-          • Tamaño de papel: <strong>41mm × 25mm</strong><br>
-          • Márgenes: <strong>Ninguno</strong><br>
-          • Sin encabezados ni pies de página
-        </p>
-
-        <div class="input-group">
-          <label>Nombre de tu impresora de etiquetas (solo referencia)</label>
-          <input class="input" id="cfgPrinterLabel" placeholder="Ej: Xprinter XP-420B">
-        </div>
-
-        <!-- Fuente nombre -->
-        <div class="input-group">
-          <label>
-            Tamaño de fuente — <strong>Nombre de la clienta</strong>
-            <span id="lblNameSizeVal" style="color:var(--accent);font-weight:800;margin-left:6px">10pt</span>
-          </label>
-          <input type="range" id="cfgLabelNameSize" min="6" max="20" step="1" value="10"
-            oninput="updateLabelPreview()"
-            style="width:100%;accent-color:var(--accent);margin-top:4px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
-            <span>Muy pequeño (6pt)</span><span>Grande (20pt)</span>
-          </div>
-        </div>
-
-        <!-- Fuente precio -->
-        <div class="input-group">
-          <label>
-            Tamaño de fuente — <strong>Precio total</strong>
-            <span id="lblPriceSizeVal" style="color:var(--accent);font-weight:800;margin-left:6px">16pt</span>
-          </label>
-          <input type="range" id="cfgLabelPriceSize" min="8" max="28" step="1" value="16"
-            oninput="updateLabelPreview()"
-            style="width:100%;accent-color:var(--accent);margin-top:4px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
-            <span>Muy pequeño (8pt)</span><span>Grande (28pt)</span>
-          </div>
-        </div>
-
-        <!-- Margen vertical (centrado) -->
-        <div class="input-group">
-          <label>
-            Posición vertical del contenido
-            <span id="lblMarginVal" style="color:var(--accent);font-weight:800;margin-left:6px">Centro</span>
-          </label>
-          <input type="range" id="cfgLabelMargin" min="0" max="8" step="0.5" value="2"
-            oninput="updateLabelPreview()"
-            style="width:100%;accent-color:var(--accent);margin-top:4px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
-            <span>⬆ Más arriba</span><span>⬇ Más abajo</span>
-          </div>
-        </div>
-
-        <!-- Mostrar fecha -->
-        <div class="input-group">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="cfgLabelShowDate" onchange="updateLabelPreview()" checked>
-            Mostrar fecha en la etiqueta (ej: 29/03/2026)
-          </label>
-        </div>
-
-        <!-- Preview de etiqueta -->
-        <div style="margin-bottom:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">
-            Vista previa (tamaño real 41×25mm)
-          </div>
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-            <div id="labelPreview" style="
-              width:154.9px; height:94.5px;
-              border:2px dashed var(--border); border-radius:4px;
-              background:white; display:flex; flex-direction:column;
-              align-items:center; justify-content:center;
-              overflow:hidden; flex-shrink:0;
-              box-shadow:var(--shadow);
-            ">
-              <div id="prevName"  style="font-family:Arial,sans-serif;font-weight:bold;text-align:center;word-break:break-word;line-height:1.2;font-size:10pt;">NOMBRE CLIENTA</div>
-              <div id="prevPrice" style="font-family:Arial,sans-serif;font-weight:bold;margin-top:2px;font-size:16pt;">$199.99</div>
-              <div id="prevDate"  style="font-family:Arial,sans-serif;font-size:7pt;color:#555;margin-top:2px;">29/03/2026</div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">
-              📐 Escala real 41×25mm<br>
-              ✏️ Ajusta los sliders<br>
-              &nbsp;&nbsp;&nbsp;para ver cambios
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="saveSettings()">💾 Guardar tamaños</button>
-          <button class="btn btn-ghost" onclick="testLabel()">🧪 Imprimir etiqueta de prueba</button>
         </div>
       </div>
 
@@ -1963,7 +1865,7 @@ function renderHistory() {
         <div style="display:flex;gap:12px;align-items:flex-start;margin-top:10px">
           <div style="flex:1;display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick='generateTicketPDF(${JSON.stringify(s)})'>📄 PDF</button>
-            <button class="btn btn-ghost btn-sm" onclick="printLabel('${escJs(s.customer)}',${s.total},'${s.date}')">🏷️ Etiqueta</button>
+
             <button class="btn btn-sm" style="background:#25D366;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;padding:5px 10px;font-size:12px" onclick='shareWhatsApp(${JSON.stringify(s)})'>📲 WhatsApp</button>
             <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;padding:5px 10px;font-size:12px" onclick="editarNota('${s.id}')">✏️ Editar</button>
             <button class="btn btn-sm" style="background:var(--red);color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;padding:5px 10px;font-size:12px" onclick="eliminarNota('${s.id}')">🗑️ Eliminar</button>
@@ -2715,7 +2617,6 @@ function checkStockAlerts(updatedProducts) {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'F1') { e.preventDefault(); copiarNota(); }
   if (e.key === 'F2') { e.preventDefault(); completeSale(); }
-  if (e.key === 'F3') { e.preventDefault(); printLabelFromCart(); }
   if (e.key === 'F4') { e.preventDefault(); showView('pos'); }
   if (e.key === 'F5') { e.preventDefault(); showView('history'); }
 });
