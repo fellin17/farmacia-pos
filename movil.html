@@ -149,7 +149,7 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 
 <div class="header">
   <span style="font-size:22px">🏪</span>
-  <h1 id="hdrName">Brandy POS</h1>
+  <h1 id="hdrName">MI NEGOCIO</h1>
   <span class="sync" id="syncStatus">⚡ Cargando...</span>
 </div>
 
@@ -159,6 +159,7 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
   <button onclick="showTab('venta')"><span>🛒</span>Venta</button>
   <button onclick="showTab('notas')"><span>📋</span>Notas</button>
   <button onclick="showTab('agregar')"><span>➕</span>Producto</button>
+  <button onclick="showTab('config')"><span>⚙️</span>Config</button>
 </div>
 
 <!-- ═══ TAB: ESCÁNER ═══ -->
@@ -489,6 +490,64 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
     </div>
   </div>
 </div>
+
+<!-- ═══ TAB: CONFIG ═══ -->
+<div id="tab-config" class="content" style="display:none">
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">💊 Datos del negocio</div>
+    <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Nombre del negocio *</label>
+        <input class="input" id="mobCfgBizName" placeholder="MI NEGOCIO" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Teléfono</label>
+        <input class="input" id="mobCfgPhone" placeholder="55 1234 5678" inputmode="tel" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Dirección</label>
+        <input class="input" id="mobCfgAddress" placeholder="Calle, Colonia, Ciudad" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">RFC</label>
+        <input class="input" id="mobCfgRfc" placeholder="XAXX010101000" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">Mensaje de despedida</label>
+        <input class="input" id="mobCfgMsg" placeholder="¡Gracias por su compra! Vuelva pronto" style="width:100%">
+      </div>
+      <button onclick="mobSaveSettings()"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,#0369a1,#0d9488);color:white;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;touch-action:manipulation;margin-top:4px">
+        💾 Guardar configuración
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">🗑️ Zona de peligro</div>
+    <div style="padding:14px">
+      <div id="zonaPeligroMob" style="display:none;flex-direction:column;gap:8px">
+        <p style="font-size:13px;color:#dc2626;font-weight:700">⚠️ Esta acción borrará TODOS los datos. No se puede deshacer.</p>
+        <button onclick="resetAllMob()"
+          style="width:100%;padding:14px;background:#dc2626;color:white;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;touch-action:manipulation">
+          ⚠️ Borrar todos los datos
+        </button>
+        <button onclick="document.getElementById('zonaPeligroMob').style.display='none'"
+          style="width:100%;padding:12px;background:#f3f4f6;color:#374151;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;touch-action:manipulation">
+          Cancelar
+        </button>
+      </div>
+      <button id="btnMostrarPeligroMob" onclick="document.getElementById('zonaPeligroMob').style.display='flex';this.style.display='none'"
+        style="width:100%;padding:12px;background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;touch-action:manipulation">
+        ⚠️ Zona de peligro
+      </button>
+    </div>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+
 <div class="summary-bar" id="summaryBar" style="display:none">
   <div>
     <div class="total-label">Total</div>
@@ -533,7 +592,7 @@ try {
 } catch(e) { console.warn('Firebase:', e.message); }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let products = [], sales = [], cuts = [], cfg = { bizName: 'Brandy POS' };
+let products = [], sales = [], cuts = [], cfg = { bizName: 'MI NEGOCIO', phone:'', address:'', rfc:'', msg:'¡Gracias por su compra!' };
 let cart = [];
 
 // ─── LOAD DATA ────────────────────────────────────────────────────────────────
@@ -580,7 +639,8 @@ function applyData(data) {
   sales    = data.sales    || [];
   cuts     = data.cuts     || [];
   if (data.cfg) cfg = { ...cfg, ...data.cfg };
-  document.getElementById('hdrName').textContent = cfg.bizName || 'Brandy POS';
+  document.getElementById('hdrName').textContent = cfg.bizName || 'MI NEGOCIO';
+  mobLoadSettings();
   renderInventario();
   renderNotas();
   renderUltimosProductos();
@@ -597,8 +657,33 @@ function setSyncStatus(msg) {
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
+function mobSaveSettings() {
+  cfg.bizName = document.getElementById('mobCfgBizName').value.trim() || 'MI NEGOCIO';
+  cfg.phone   = document.getElementById('mobCfgPhone').value.trim();
+  cfg.address = document.getElementById('mobCfgAddress').value.trim();
+  cfg.rfc     = document.getElementById('mobCfgRfc').value.trim();
+  cfg.msg     = document.getElementById('mobCfgMsg').value.trim() || '¡Gracias por su compra!';
+  document.getElementById('hdrName').textContent = cfg.bizName;
+  saveData();
+  toast('✅ Configuración guardada');
+}
+
+function mobLoadSettings() {
+  const el = (id) => document.getElementById(id);
+  if (el('mobCfgBizName')) el('mobCfgBizName').value = cfg.bizName || '';
+  if (el('mobCfgPhone'))   el('mobCfgPhone').value   = cfg.phone   || '';
+  if (el('mobCfgAddress')) el('mobCfgAddress').value = cfg.address || '';
+  if (el('mobCfgRfc'))     el('mobCfgRfc').value     = cfg.rfc     || '';
+  if (el('mobCfgMsg'))     el('mobCfgMsg').value     = cfg.msg     || '';
+}
+
+function resetAllMob() {
+  localStorage.removeItem('farmacia_pos_backup');
+  location.reload();
+}
+
 function showTab(tab) {
-  ['scanner','inventario','venta','notas','agregar'].forEach(t => {
+  ['scanner','inventario','venta','notas','agregar','config'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
   });
   document.querySelectorAll('.nav button').forEach((btn, i) => {
