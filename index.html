@@ -849,11 +849,14 @@ function abrirPDFVisor(doc) {
 }
 
 // ─── WHATSAPP WEB — misma pestaña siempre ─────────────────────────────────────
-// Usa wa.html como puente para forzar la reutilización de la misma pestaña.
+let whatsappWindow = null;
 function abrirWA(url) {
-  const bridgeUrl = 'wa.html?u=' + encodeURIComponent(url);
-  const waTab = window.open(bridgeUrl, 'brandy_whatsapp');
-  if (waTab) waTab.focus();
+  if (!whatsappWindow || whatsappWindow.closed) {
+    whatsappWindow = window.open(url, 'brandy_whatsapp');
+  } else {
+    whatsappWindow.location.href = url;
+    whatsappWindow.focus();
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
