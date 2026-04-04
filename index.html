@@ -1285,10 +1285,10 @@ function printLabelFromCart() {
 }
 
 function updateLabelPreview() {
-  const nameSize  = document.getElementById('cfgLabelNameSize')?.value  || 10;
-  const priceSize = document.getElementById('cfgLabelPriceSize')?.value || 16;
-  const margin    = document.getElementById('cfgLabelMargin')?.value    || 2;
-  const showDate  = document.getElementById('cfgLabelShowDate')?.checked !== false;
+  const nameSize  = cfg.labelNameSize  || 10;
+  const priceSize = cfg.labelPriceSize || 16;
+  const margin    = cfg.labelMargin    || 2;
+  const showDate  = cfg.labelShowDate  !== false;
 
   document.getElementById('lblNameSizeVal').textContent  = nameSize  + 'pt';
   document.getElementById('lblPriceSizeVal').textContent = priceSize + 'pt';
@@ -2323,14 +2323,8 @@ function loadSettings() {
   document.getElementById('cfgAddress').value        = cfg.address  || '';
   document.getElementById('cfgRfc').value            = cfg.rfc      || '';
   document.getElementById('cfgMsg').value            = cfg.msg      || '';
-  document.getElementById('cfgPrinterTicket').value  = cfg.printerTicket  || '';
-  document.getElementById('cfgPrinterLabel').value   = cfg.printerLabel   || '';
-  document.getElementById('cfgLabelNameSize').value  = cfg.labelNameSize  || 10;
-  document.getElementById('cfgLabelPriceSize').value = cfg.labelPriceSize || 16;
-  const marginEl = document.getElementById('cfgLabelMargin');
-  if (marginEl) marginEl.value = cfg.labelMargin !== undefined ? cfg.labelMargin : 2;
-  const dateEl = document.getElementById('cfgLabelShowDate');
-  if (dateEl) dateEl.checked = cfg.labelShowDate !== false;
+  const printerEl = document.getElementById('cfgPrinterTicket');
+  if (printerEl) printerEl.value = cfg.printerTicket || '';
   // Header config
   document.getElementById('cfgHeaderNameSize').value = cfg.headerNameSize || 22;
   document.getElementById('cfgHeaderDataSize').value = cfg.headerDataSize || 10;
@@ -2359,12 +2353,8 @@ function saveSettings() {
   cfg.address       = document.getElementById('cfgAddress').value.trim();
   cfg.rfc           = document.getElementById('cfgRfc').value.trim();
   cfg.msg           = document.getElementById('cfgMsg').value.trim()      || '¡Gracias por su compra!';
-  cfg.printerTicket = document.getElementById('cfgPrinterTicket').value.trim();
-  cfg.printerLabel  = document.getElementById('cfgPrinterLabel').value.trim();
-  cfg.labelNameSize  = parseInt(document.getElementById('cfgLabelNameSize').value)  || 10;
-  cfg.labelPriceSize = parseInt(document.getElementById('cfgLabelPriceSize').value) || 16;
-  cfg.labelMargin    = parseFloat(document.getElementById('cfgLabelMargin')?.value)    ?? 2;
-  cfg.labelShowDate  = document.getElementById('cfgLabelShowDate')?.checked !== false;
+  const printerEl2 = document.getElementById('cfgPrinterTicket');
+  if (printerEl2) cfg.printerTicket = printerEl2.value.trim();
   // Header config
   cfg.headerNameSize   = parseInt(document.getElementById('cfgHeaderNameSize').value) || 22;
   cfg.headerDataSize   = parseInt(document.getElementById('cfgHeaderDataSize').value) || 10;
