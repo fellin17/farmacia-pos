@@ -216,6 +216,12 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
     </div>
   </div>
 
+  <!-- Botón Reporte de Inventario -->
+  <button onclick="generarReporteInventario()"
+    style="width:100%;margin-bottom:12px;padding:13px;background:linear-gradient(135deg,#0369a1,#0d9488);color:white;border:none;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px">
+    📊 Reporte de Inventario PDF
+  </button>
+
   <div class="input-group">
     <label>Buscar producto</label>
     <div style="display:flex;gap:8px">
@@ -1258,6 +1264,188 @@ function waShare(saleId) {
 }
 
 // ─── PDF MÓVIL ────────────────────────────────────────────────────────────────
+function generarReporteInventario() {
+  if (!products.length) { toast('No hay productos en inventario', 'error'); return; }
+  toast('Generando reporte...');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'letter', orientation:'portrait' });
+  const W = 216, PL = 18, PR = 18;
+  let y = 14;
+  const ln = (h) => { y += (h||5); };
+  const fmt = v => '$' + (v||0).toFixed(2);
+
+  // Calcular ventas por producto
+  const ventasPorProd = {};
+  sales.forEach(s => {
+    (s.items||[]).forEach(i => {
+      if (!ventasPorProd[i.name]) ventasPorProd[i.name] = { qty: 0, total: 0 };
+      ventasPorProd[i.name].qty   += i.qty || 0;
+      ventasPorProd[i.name].total += (i.sellPrice||0) * (i.qty||0);
+    });
+  });
+
+  // Ordenar productos por unidades vendidas (mayor consumo primero)
+  const prods = [...products].sort((a, b) => {
+    const va = (ventasPorProd[a.name]?.qty || 0);
+    const vb = (ventasPorProd[b.name]?.qty || 0);
+    return vb - va;
+  });
+
+  // ── MEMBRETE ──
+  const nameSize = cfg.headerNameSize || 20;
+  const dataSize = cfg.headerDataSize || 9;
+  const nameBold = cfg.headerNameBold !== false;
+  const nameItal = cfg.headerNameItalic === true;
+  const jsPdfFont = nameBold && nameItal ? 'bolditalic' : nameBold ? 'bold' : nameItal ? 'italic' : 'normal';
+  const logoSize = 26;
+  const logoX = PL;
+  const dataX = PL + logoSize + 5;
+  const yStart = y;
+
+  if (cfg.headerLogo) {
+    try { doc.addImage(cfg.headerLogo, 'JPEG', logoX, y, logoSize, logoSize); } catch {}
+  }
+  doc.setFontSize(nameSize); doc.setFont('helvetica', jsPdfFont);
+  doc.text(cfg.bizName || 'MI NEGOCIO', dataX, y + 7);
+  let yData = y + 7 + nameSize * 0.38;
+  doc.setFontSize(dataSize); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+  if (cfg.address) { doc.text(cfg.address, dataX, yData); yData += dataSize * 0.55; }
+  if (cfg.phone)   { doc.text('Tel: ' + cfg.phone, dataX, yData); yData += dataSize * 0.55; }
+  if (cfg.rfc)     { doc.text('RFC: ' + cfg.rfc, dataX, yData); }
+  doc.setTextColor(0,0,0);
+  y = Math.max(yStart + logoSize + 3, yData + 2);
+
+  doc.setLineWidth(0.5); doc.line(PL, y, W-PR, y); ln(5);
+
+  // ── TÍTULO ──
+  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(3,105,161);
+  doc.text('REPORTE DE INVENTARIO', W/2, y, {align:'center'}); ln(5.5);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+  const fechaHoy = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  doc.text('Generado: ' + fechaHoy, W/2, y, {align:'center'}); ln(4);
+  doc.text('Ordenado por: mayor consumo (unidades vendidas)', W/2, y, {align:'center'});
+  doc.setTextColor(0,0,0); ln(5);
+
+  doc.setLineWidth(0.3); doc.line(PL, y, W-PR, y); ln(4);
+
+  // ── RESUMEN GENERAL ──
+  const totalProds = prods.length;
+  const totalStock = prods.reduce((s,p) => s+p.stock, 0);
+  const valorInventario = prods.reduce((s,p) => s+(p.buyPrice||0)*p.stock, 0);
+  const valorVenta = prods.reduce((s,p) => s+(p.sellPrice||0)*p.stock, 0);
+
+  doc.setFillColor(239,246,255);
+  doc.rect(PL, y, W-PL-PR, 18, 'F');
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(3,105,161);
+  doc.text('RESUMEN GENERAL', PL+4, y+5);
+  doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(8);
+  doc.text('Productos: ' + totalProds, PL+4, y+10);
+  doc.text('Unidades en stock: ' + totalStock, PL+55, y+10);
+  doc.text('Valor compra: ' + fmt(valorInventario), PL+4, y+15);
+  doc.text('Valor venta: ' + fmt(valorVenta), PL+55, y+15);
+  doc.text('Ganancia potencial: ' + fmt(valorVenta - valorInventario), PL+110, y+10);
+  ln(22);
+
+  // ── TABLA ──
+  const colN  = PL;       // Nombre
+  const colC  = PL+80;    // Código
+  const colS  = PL+110;   // Stock
+  const colV  = PL+128;   // Vendidos
+  const colPC = PL+148;   // P.Compra
+  const colPV = PL+168;   // P.Venta
+
+  // Encabezado tabla
+  doc.setFillColor(3,105,161);
+  doc.rect(PL, y-3, W-PL-PR, 8, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('PRODUCTO',     colN+2,  y+2);
+  doc.text('CÓDIGO',       colC+2,  y+2);
+  doc.text('STOCK',        colS+2,  y+2);
+  doc.text('VENDIDOS',     colV+2,  y+2);
+  doc.text('P.COMPRA',     colPC+2, y+2);
+  doc.text('P.VENTA',      colPV+2, y+2);
+  doc.setTextColor(0,0,0); ln(8);
+
+  // Filas
+  let rowNum = 0;
+  prods.forEach((p, idx) => {
+    if (y > 260) {
+      doc.addPage();
+      y = 20;
+    }
+    const vendidos = ventasPorProd[p.name]?.qty || 0;
+    const esFila = rowNum % 2 === 0;
+    if (esFila) {
+      doc.setFillColor(245,251,255);
+      doc.rect(PL, y-3, W-PL-PR, 7, 'F');
+    }
+
+    // Número de posición
+    doc.setFontSize(7); doc.setFont('helvetica','bold');
+    if (vendidos > 0) {
+      doc.setTextColor(3,105,161); // Azul si tiene ventas
+    } else {
+      doc.setTextColor(150,150,150); // Gris si no tiene ventas
+    }
+    doc.text((idx+1).toString() + '.', PL-1, y+1, {align:'right'});
+
+    doc.setFont('helvetica', vendidos > 0 ? 'bold' : 'normal');
+    doc.setFontSize(8);
+    const nomMax = 38;
+    const nom = p.name.length > nomMax ? p.name.substring(0,nomMax-2)+'..' : p.name;
+    doc.text(nom, colN+3, y+1);
+
+    doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+    doc.text(p.barcode || '-', colC+2, y+1);
+
+    // Stock — rojo si bajo
+    if (p.stock <= 3) doc.setTextColor(220,38,38);
+    else doc.setTextColor(0,0,0);
+    doc.setFont('helvetica','bold');
+    doc.text(p.stock.toString(), colS+8, y+1, {align:'center'});
+
+    // Vendidos — verde si > 0
+    if (vendidos > 0) doc.setTextColor(5,150,105);
+    else doc.setTextColor(150,150,150);
+    doc.text(vendidos.toString(), colV+10, y+1, {align:'center'});
+
+    doc.setTextColor(0,0,0); doc.setFont('helvetica','normal');
+    doc.text(fmt(p.buyPrice||0),  colPC+2, y+1);
+    doc.text(fmt(p.sellPrice||0), colPV+2, y+1);
+
+    ln(7); rowNum++;
+  });
+
+  // Línea final
+  doc.setLineWidth(0.5); doc.line(PL, y, W-PR, y); ln(5);
+  doc.setFontSize(8); doc.setTextColor(100,100,100);
+  doc.text('★ Azul = productos con ventas registradas  |  Rojo en stock = stock bajo (≤3 unidades)', PL, y);
+  ln(4);
+  doc.text('Reporte generado por ' + (cfg.bizName||'MI NEGOCIO') + ' — ' + new Date().toLocaleString('es-MX'), PL, y);
+
+  // Abrir en visor
+  const base64 = doc.output('datauristring');
+  const html = '<html><head><title>Reporte Inventario</title>'
+    + '<style>@page{size:auto;margin:0}body{margin:0;background:#444}'
+    + '.bar{position:fixed;top:0;left:0;right:0;background:#1a1a1a;padding:10px 16px;display:flex;gap:10px;align-items:center;z-index:10}'
+    + '.bar button{padding:9px 16px;border:none;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer}'
+    + 'iframe{width:100%;height:100vh;border:none;margin-top:0}'
+    + '</style></head><body>'
+    + '<div class="bar">'
+    + '<span style="color:white;flex:1;font-family:sans-serif;font-size:13px">📊 Reporte de Inventario</span>'
+    + '<button style="background:#059669;color:white" onclick="frames[0].print()">🖨️ Imprimir</button>'
+    + '<button style="background:#555;color:white" onclick="window.close()">✕</button>'
+    + '</div>'
+    + '<iframe src="' + base64 + '" style="margin-top:44px;height:calc(100vh - 44px)"></iframe>'
+    + '</body></html>';
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) win.focus();
+  else toast('Activa ventanas emergentes', 'error');
+}
+
 function generarPDFNota(saleId) {
   const sale = sales.find(s => s.id === saleId);
   if (!sale) { toast('Nota no encontrada', 'error'); return; }
