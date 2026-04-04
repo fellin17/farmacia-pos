@@ -1388,13 +1388,26 @@ function renderQRCodes() {
   document.querySelectorAll('.qr-placeholder').forEach(el => {
     if (el.dataset.rendered) return;
     el.dataset.rendered = '1';
-    const text = decodeURIComponent(el.dataset.qr);
+    // Usar texto corto para evitar overflow en QR pequeño
+    const folio = el.dataset.folio || '';
+    const total = el.dataset.total || '';
+    const text = 'Folio:#' + folio + ' $' + total;
     try {
+      el.innerHTML = '';
       new QRCode(el, {
-        text, width: 80, height: 80,
-        correctLevel: QRCode.CorrectLevel.M,
+        text: text,
+        width: 80, height: 80,
+        correctLevel: QRCode.CorrectLevel.L, // L = más tolerante, menos denso
       });
-    } catch(e) {}
+    } catch(e) {
+      // Reintento con texto mínimo
+      try {
+        el.innerHTML = '';
+        new QRCode(el, { text: folio || 'QR', width: 80, height: 80, correctLevel: QRCode.CorrectLevel.L });
+      } catch(e2) {
+        el.innerHTML = '<div style="font-size:9px;color:#999;text-align:center;padding:4px">QR<br>#' + folio + '</div>';
+      }
+    }
   });
 }
 
@@ -1871,7 +1884,10 @@ function renderHistory() {
             <button class="btn btn-sm" style="background:var(--red);color:white;border:none;border-radius:6px;font-weight:700;cursor:pointer;padding:5px 10px;font-size:12px" onclick="eliminarNota('${s.id}')">🗑️ Eliminar</button>
           </div>
           <div style="text-align:center;flex-shrink:0">
-            <div class="qr-placeholder" data-qr="${encodeURIComponent(getSaleQRText(s))}"
+            <div class="qr-placeholder"
+              data-qr="${encodeURIComponent(getSaleQRText(s))}"
+              data-folio="${s.id.slice(-6).toUpperCase()}"
+              data-total="${s.total.toFixed(2)}"
               style="width:80px;height:80px;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:white;display:flex;align-items:center;justify-content:center;">
             </div>
             <div style="font-size:9px;color:var(--muted);margin-top:3px;text-align:center">📷 Escanear nota</div>
@@ -1881,7 +1897,7 @@ function renderHistory() {
     </div>`).join('');
 
   // Generar QRs después de que el DOM esté listo
-  setTimeout(renderQRCodes, 50);
+  setTimeout(renderQRCodes, 150);
 }
 
 // ─── INVENTORY ────────────────────────────────────────────────────────────────
